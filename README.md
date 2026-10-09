@@ -83,6 +83,19 @@ Touch Bar 上的双行分段电量条，分别展示 5 小时额度与周额度�
 
 菜单栏和桌面 HUD 不依赖 Touch Bar 硬件，但 Touch Bar 展示功能仅适用于配备该硬件的 MacBook Pro。
 
+## 安装
+
+Releases 提供 DMG 格式安装包（`ZQuota-<版本号>-macOS.dmg`）：
+
+1. 到 [Releases](https://github.com/stevenwangking/zquota/releases) 下载 DMG，双击挂载。
+2. 将盘面上的 `ZQuota.app` 拖到 `Applications` 快捷方式。
+3. 首次启动若被 Gatekeeper 拦截（ad-hoc 签名，非 Developer ID / Mac App Store 签名），任选一种方式放行：
+   * 在 Finder 中右键（控制点按）`ZQuota.app` → 打开 → 确认运行；或
+   * 系统设置 → 隐私与安全性 → 在 ZQuota 被阻止的提示中点「仍要打开」。
+4. 启动后菜单栏出现 ZCode 图标；应用常驻运行，并注册 LaunchAgent 在检测到 ZCode 时自动拉起。
+
+卸载见本文末尾「卸载」一节。
+
 ## 构建与运行
 
 在项目根目录执行：
@@ -98,6 +111,14 @@ build/ZQuota.app
 ```
 
 构建脚本负责编译、打包及 ad-hoc 签名。该签名不等同于 Developer ID 签名或 Mac App Store 分发签名。
+
+生成 DMG 安装盘（与 Releases 中的安装包格式一致）：
+
+```bash
+./scripts/build-dmg.sh [版本号] [输出目录]
+```
+
+版本号缺省为 `0.1.0`，输出目录缺省为仓库根下的 `dist/`。
 
 构建完成后，可根据需要将 `ZQuota.app` 移动到 `/Applications`，再按项目配置启动应用。
 
@@ -184,7 +205,8 @@ zquota/
 │   ├── AppIcon.icns
 │   └── zquota-launcher.sh
 ├── scripts/
-│   └── build-app.sh
+│   ├── build-app.sh
+│   └── build-dmg.sh
 ├── LICENSE
 └── README.md
 ```

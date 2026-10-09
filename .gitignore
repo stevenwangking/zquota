@@ -1,6 +1,7 @@
 # 构建产物
 .build/
 build/
+dist/
 
 # 系统文件
 .DS_Store
