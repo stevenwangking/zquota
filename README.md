@@ -10,6 +10,12 @@ ZQuota 将 ZCode 的额度使用情况展示在 Touch Bar、macOS 菜单栏和�
 
 本项目基于 [TouchBarCodexToken](https://github.com/jackchensky/TouchBarCodexToken) 改造，保留其 Touch Bar 可视化设计思路，将数据源替换为 ZCode 官方额度接口，并针对 ZCode 桌面端和 CLI 的使用方式调整应用生命周期。
 
+## 效果预览
+
+Touch Bar 上的双行分段电量条，分别展示 5 小时额度与周额度的剩余比例、重置时间与倒计时：
+
+<img src="assets/zquota-touchbar.png" alt="ZQuota Touch Bar 效果" width="100%">
+
 ## 功能特性
 
 * **双窗口额度监控**：分别展示 5 小时额度和周额度。
@@ -155,6 +161,8 @@ ZQuota 基于 [TouchBarCodexToken](https://github.com/jackchensky/TouchBarCodexT
 
 ```text
 zquota/
+├── assets/                     README 效果图
+│   └── zquota-touchbar.png
 ├── Package.swift               含 ObjC shim target
 ├── Shim/                       桥接被 SDK 移除、运行时仍存在的 Touch Bar API
 │   ├── include/ZCodeTouchBar.h
