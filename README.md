@@ -180,6 +180,10 @@ ZQuota 直接读取 ZCode 的本地登录凭据，并调用额度接口获取使
 
 <img src="assets/btt-touchbar.jpg" alt="ZQuota BTT 版 Touch Bar 效果" width="100%">
 
+## 发版流程（维护者）
+
+发版已自动化：推送 `v*` tag 后，GitHub Actions 在 macOS 云端 runner 上构建 DMG、从 CHANGELOG.md 提取该版本段落作为发布说明，自动创建 Release 并上传安装包。ZCode 中执行 `/release 0.3.0`（或直接说「发布 0.3.0」）即可完成全流程——更新版本号、归纳 CHANGELOG、提交打 tag 并验证 CI 产出发版链接（见 `.zcode/skills/release`）。手动等价操作：更新 `Resources/Info.plist` 版本号与 CHANGELOG.md，提交推送后执行 `git tag -a v0.3.0 -m "..." && git push origin v0.3.0`。
+
 ## 已知限制
 
 ZCode 官方 UI 存在「{count} 次重置额度」概念（5 小时窗与周窗各自的重置券次数），对应接口 `zcode.z.ai/api/v1/coding-plan/reset/status`（返回 `available_five_hour_resets` / `available_week_resets`）。该接口鉴权可用本机 `zcodejwttoken` 通过，但其业务必填参数由 ZCode 客户端内部封装注入，尚未逆向出来，因此 Touch Bar 尾列暂显示重置倒计时。攻破该接口后，替换 `TouchBarRateLimitsView.resetCountdownText` 即可切换为次数显示。
@@ -201,6 +205,8 @@ ZQuota 基于 [TouchBarCodexToken](https://github.com/jackchensky/TouchBarCodexT
 
 ```text
 zquota/
+├── .github/workflows/          CI：推送 v* tag 自动打包发布 Release
+├── .zcode/skills/              ZCode 项目 skill（/release 一句话发版）
 ├── assets/                     README 效果图
 │   └── zquota-touchbar.png
 ├── Package.swift               含 ObjC shim target

@@ -1,0 +1,42 @@
+name: Release
+
+# 推送 v* tag 触发：在 macOS runner 上构建 DMG、从 CHANGELOG.md 提取该版本段落
+# 作为发布说明，自动创建 GitHub Release 并上传安装包，本地无需打包。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: 从 tag 提取版本号
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: 构建 DMG
+        run: bash scripts/build-dmg.sh "$VERSION" dist
+
+      - name: 从 CHANGELOG.md 提取发布说明
+        run: |
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md | sed -e '/./,$!d' > dist/release-notes.md
+          if [[ ! -s dist/release-notes.md ]]; then
+            echo "CHANGELOG.md 中未找到版本 $VERSION 的段落" >&2
+            exit 1
+          fi
+
+      - name: 创建 Release 并上传 DMG
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/ZQuota-*-macOS.dmg
+          body_path: dist/release-notes.md
