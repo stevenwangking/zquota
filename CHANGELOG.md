@@ -2,10 +2,11 @@
 
 记录 ZQuota 每个版本的用户可见变更，格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [0.2.1] - 2026-10-10
+## [0.3.0] - 2026-10-10
 
 ### 新增
 
+- 数据陈旧可见化：连续约 10 分钟（20 个刷新周期）未成功刷新即视为陈旧，Touch Bar 各展示加 ⚠ 前缀并保留上一组数据，恢复刷新后自动移除；掉登录、断网等场景下旧额度不再被误当作当前值。
 - 发版自动化：推送 `v*` tag 后由 GitHub Actions 在云端构建 DMG、从本文件提取对应版本段落作为发布说明并自动创建 GitHub Release，本地不再手工打包。
 - ZCode 项目 skill `/release`（`.zcode/skills/release`）：一句话完成版本号更新、CHANGELOG 归纳、打 tag 与发版验证。
 
