@@ -313,8 +313,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         }
 
         if !titleParts.isEmpty {
-            button.title = menuBarIconOnly ? "" : " \(titleParts.joined(separator: "  "))"
-            button.toolTip = "ZCode 额度：\(tooltipParts.joined(separator: "，"))"
+            let stalePrefix = state.isStale ? "⚠ " : ""
+            button.title = menuBarIconOnly ? "" : " \(stalePrefix)\(titleParts.joined(separator: "  "))"
+            var tooltip = "ZCode 额度：\(tooltipParts.joined(separator: "，"))"
+            if state.isStale, let lastUpdated = state.lastUpdated {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "HH:mm"
+                tooltip += "（⚠ 数据已过期，上次成功刷新 \(formatter.string(from: lastUpdated))）"
+            }
+            button.toolTip = tooltip
         } else if state.isRefreshing {
             button.title = menuBarIconOnly ? "" : " ..."
             button.toolTip = "ZCode 额度：正在刷新"

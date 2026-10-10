@@ -62,6 +62,7 @@ final class TouchBarRateLimitsView: NSView {
 
     func update(with state: RateLimitDisplayState) {
         refreshButton.setSpinning(state.isRefreshing)
+        setStaleIndicator(state.isStale)
         if let fiveHour = state.fiveHour {
             fiveHourRow.isHidden = false
             fiveHourRow.updateLimit(
@@ -110,6 +111,36 @@ final class TouchBarRateLimitsView: NSView {
         return "\(minutes)分后重置"
     }
 
+    /// 刷新按钮图标（数据陈旧时被 ⚠ 覆盖，恢复时复用）
+    private static let refreshSymbol: NSImage? = {
+        NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "刷新额度")?
+            .withSymbolConfiguration(.init(pointSize: 14, weight: .medium))
+    }()
+
+    /// 数据陈旧时右端按钮切为黄色 ⚠（点击仍触发刷新）：
+    /// 行内各元素宽度固定排满 538pt，无法新增标记元素，借位刷新按钮最省布局
+    private func setStaleIndicator(_ stale: Bool) {
+        if stale {
+            refreshButton.title = ""
+            if let warn = NSImage(systemSymbolName: "exclamationmark.triangle.fill", accessibilityDescription: "数据已过期")?
+                .withSymbolConfiguration(.init(pointSize: 14, weight: .medium)) {
+                refreshButton.image = warn
+            } else {
+                refreshButton.title = "⚠"
+            }
+            refreshButton.contentTintColor = .systemYellow
+            refreshButton.toolTip = "数据已过期，点击刷新"
+        } else {
+            if let symbol = Self.refreshSymbol {
+                refreshButton.image = symbol
+            } else {
+                refreshButton.title = "↻"
+            }
+            refreshButton.contentTintColor = .labelColor
+            refreshButton.toolTip = "刷新额度"
+        }
+    }
+
     private func configure() {
         translatesAutoresizingMaskIntoConstraints = false
 
@@ -122,8 +153,7 @@ final class TouchBarRateLimitsView: NSView {
         closeButton.translatesAutoresizingMaskIntoConstraints = false
 
         // 右端刷新按钮：系统同款双箭头刷新图标，小尺寸、紧跟状态文字
-        if let symbol = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "刷新额度")?
-            .withSymbolConfiguration(.init(pointSize: 14, weight: .medium)) {
+        if let symbol = Self.refreshSymbol {
             refreshButton.image = symbol
             refreshButton.imagePosition = .imageOnly
             refreshButton.imageScaling = .scaleProportionallyDown

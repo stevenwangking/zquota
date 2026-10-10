@@ -65,13 +65,28 @@ struct RateLimitDisplayState: Equatable {
         errorMessage: nil
     )
 
+    /// 连续超过该时长未成功刷新即视为数据陈旧。正常刷新周期 30s，
+    /// 10 分钟意味着已连续失败约 20 次（掉登录/断网等），旧额度不应再当作当前值
+    static let staleInterval: TimeInterval = 10 * 60
+
+    /// 有过成功数据但太久未更新成功；从未读到过数据（lastUpdated 为 nil）不算陈旧，
+    /// 那是"无数据"占位场景。各展示层据此加 ⚠ 提示
+    var isStale: Bool {
+        guard let lastUpdated else {
+            return false
+        }
+        return Date().timeIntervalSince(lastUpdated) > Self.staleInterval
+    }
+
     var statusText: String {
+        let stalePrefix = isStale ? "⚠ " : ""
+
         if let errorMessage {
-            return errorMessage
+            return stalePrefix + errorMessage
         }
 
         if isRefreshing {
-            return lastUpdated == nil ? "正在读取 ZCode 额度..." : "正在刷新，保留上一组数据"
+            return lastUpdated == nil ? "正在读取 ZCode 额度..." : stalePrefix + "正在刷新，保留上一组数据"
         }
 
         guard let lastUpdated else {
@@ -80,6 +95,6 @@ struct RateLimitDisplayState: Equatable {
 
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
-        return "上次更新 \(formatter.string(from: lastUpdated))"
+        return stalePrefix + "上次更新 \(formatter.string(from: lastUpdated))"
     }
 }
