@@ -14,3 +14,7 @@ DerivedData/
 # Swift PM
 *.resolved
 .swiftpm/
+
+# BTT 运行产物：bar_*.png 可由 btt/render-bars.swift 重新生成，widget-uuid.txt 为本机部署状态
+btt/icons/bar_*.png
+btt/widget-uuid.txt
