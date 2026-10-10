@@ -146,6 +146,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         let settingsItem = NSMenuItem(title: "设置", action: nil, keyEquivalent: "")
         menu.setSubmenu(makeAppearanceSettingsMenu(registerItems: true), for: settingsItem)
         menu.addItem(settingsItem)
+        if let versionItem = makeVersionItem() {
+            menu.addItem(versionItem)
+        }
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(
@@ -181,6 +184,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         let settingsItem = NSMenuItem(title: "设置", action: nil, keyEquivalent: "")
         menu.setSubmenu(makeAppearanceSettingsMenu(registerItems: false), for: settingsItem)
         menu.addItem(settingsItem)
+        if let versionItem = makeVersionItem() {
+            menu.addItem(versionItem)
+        }
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(
@@ -251,6 +257,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         settingsMenu.addItem(contentOpacityItem)
 
         return settingsMenu
+    }
+
+    /// 版本号菜单项（禁用态）；版本由打包脚本写入 Info.plist，swift run 开发环境无此值则不显示
+    private func makeVersionItem() -> NSMenuItem? {
+        guard let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String else {
+            return nil
+        }
+        let item = NSMenuItem(title: "ZQuota v\(version)", action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
     }
 
     private func makeOpacityMenu(for setting: OpacitySetting, registerItems: Bool) -> NSMenu {
