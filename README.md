@@ -4,7 +4,7 @@
 
 ZQuota 将 ZCode 的额度使用情况展示在 Touch Bar、macOS 菜单栏和桌面 HUD 浮窗中，通过直观的分段电量条查看短期与每周额度，帮助你随时掌握剩余额度及重置时间。
 
-* **Touch Bar**：双行分段电量条常驻显示，展示 5 小时额度、周额度、重置时间与重置倒计时。
+* **Touch Bar**：双行分段电量条，ZCode 前台时显示，展示 5 小时额度、周额度、重置时间与重置倒计时。
 * **菜单栏**：紧凑展示两种额度的剩余比例，悬停查看 MCP 工具剩余次数和订阅档位。
 * **桌面 HUD**：可拖动的胶囊浮窗（默认隐藏），支持自定义颜色和透明度，刷新按钮带旋转动画与悬停反馈。
 
@@ -22,7 +22,7 @@ Touch Bar 上的双行分段电量条，分别展示 5 小时额度与周额度�
 * **分段电量条**：根据剩余比例自动切换颜色，快速识别额度紧张程度。
 * **多位置展示**：Touch Bar 常驻、菜单栏常驻、桌面 HUD 按需显示。
 * **重置信息双呈现**：每行同时显示绝对重置时间（`10月09日 13:01 重置`）与相对倒计时（`2时31分后重置`）。
-* **Touch Bar 开关**：菜单栏「显示在 Touch Bar」可随时开关，默认开启，状态持久化。
+* **Touch Bar 跟随前台**：额度条仅在 ZCode 桌面端处于前台时呈现，切换到其他应用（微信、Trae 等）自动隐藏，避免遮挡其原生 Touch Bar；可通过菜单栏「在 ZCode 前台时显示」开关，默认开启，状态持久化。
 * **自动刷新**：每 30 秒获取一次最新额度（Touch Bar 上的刷新按钮可手动触发）。
 * **异常容错**：刷新失败时保留上一组有效数据。
 * **自动跟随登录状态**：读取 ZCode 本地凭据，无需单独配置 API Key。
@@ -45,8 +45,8 @@ Touch Bar 上的双行分段电量条，分别展示 5 小时额度与周额度�
            周限额 ▓▓▓▓▓▓░ 剩余 65%  10月15日 23:00 重置 | 6天12时后重置
 ```
 
-* 应用启动即以系统模态方式常驻呈现，无需手动激活。
-* 条上 `×` 或菜单栏「显示在 Touch Bar」可关闭；菜单开关重新开启。
+* 仅当 ZCode 桌面端处于前台时以系统模态方式呈现；切到其他应用自动隐藏，回到 ZCode 自动恢复。
+* 条上 `×` 或菜单栏「在 ZCode 前台时显示」可关闭；菜单开关重新开启。
 * HUD 浮窗上的 `×` 仅隐藏浮窗，不退出应用；退出请用菜单栏「退出」。
 
 ### 桌面 HUD
@@ -110,7 +110,11 @@ Releases 提供 DMG 格式安装包（`ZQuota-<版本号>-macOS.dmg`）：
 build/ZQuota.app
 ```
 
-构建脚本负责编译、打包及 ad-hoc 签名。该签名不等同于 Developer ID 签名或 Mac App Store 分发签名。
+构建脚本负责编译、打包及 ad-hoc 签名。该签名不等同于 Developer ID 签名或 Mac App Store 分发签名。可选版本号参数会在签名前写入应用内的 `CFBundleShortVersionString`（DMG 脚本会自动传入，保证文件名与应用版本一致）：
+
+```bash
+./scripts/build-app.sh [版本号]
+```
 
 生成 DMG 安装盘（与 Releases 中的安装包格式一致）：
 
@@ -161,6 +165,21 @@ ZQuota 直接读取 ZCode 的本地登录凭据，并调用额度接口获取使
 
 **安全说明：** 上述说明描述的是预期的数据处理方式。实际安全性还取决于日志、崩溃报告、进程间通信及其他代码路径是否会暴露凭据。
 
+## BetterTouchTool 版（btt/）
+
+针对已通过 [BetterTouchTool](https://www.folivora.ai) 自定义 Touch Bar 的场景，仓库提供等价的 BTT 部署方案（要求系统设置「触控栏显示」为 App 控制模式）：
+
+* **视觉规格与 APP 版一致**：分段电量条由 `btt/render-bars.swift` 按APP 版 `SegmentedBatteryBar` 的绘制参数（10 段、段距、圆角、三档配色）渲染为 @2x PNG；文本双行布局、倒计时文案与 `TouchBarRateLimitsView` 对齐。
+* **数据链路复用**：`~/.local/bin/zquota-btt`（Node）复用凭据解密与额度接口调用，带 25 秒 JSON 缓存；电量条 PNG 按剩余比例组合懒渲染并落盘复用。
+* **部署**：`btt/install.sh` 通过 BTT 的 AppleScript 接口幂等创建三个条目——ZCode 图标、主 widget（30 秒自刷新）、刷新按钮；点击 widget 或刷新按钮即时重拉数据上屏。
+* 与 APP 版可共存，各自独立刷新互不干扰；卸载时在 BTT 中删除 `ZQuota` / `ZQuotaIcon` / `ZQuotaRefresh` 三个条目即可。
+
+```bash
+./btt/install.sh
+```
+
+<img src="assets/btt-touchbar.jpg" alt="ZQuota BTT 版 Touch Bar 效果" width="100%">
+
 ## 已知限制
 
 ZCode 官方 UI 存在「{count} 次重置额度」概念（5 小时窗与周窗各自的重置券次数），对应接口 `zcode.z.ai/api/v1/coding-plan/reset/status`（返回 `available_five_hour_resets` / `available_week_resets`）。该接口鉴权可用本机 `zcodejwttoken` 通过，但其业务必填参数由 ZCode 客户端内部封装注入，尚未逆向出来，因此 Touch Bar 尾列暂显示重置倒计时。攻破该接口后，替换 `TouchBarRateLimitsView.resetCountdownText` 即可切换为次数显示。
@@ -174,7 +193,7 @@ ZQuota 基于 [TouchBarCodexToken](https://github.com/jackchensky/TouchBarCodexT
 | 数据来源 | Codex app-server 的 `account/rateLimits/read` | ZCode 额度接口                           |
 | 额度展示 | Codex 相关使用限制及统计                              | 5 小时额度、周额度、重置倒计时                     |
 | 补充信息 | 重置券、点数余额、历史 Token 等                          | MCP 工具剩余次数、订阅档位（菜单栏悬停）               |
-| Touch Bar 呈现 | 点击 HUD 激活窗口接管                          | 系统模态常驻（经 ObjC shim 调用运行时仍存在的 API，macOS 15 SDK 已移除其声明） |
+| Touch Bar 呈现 | 点击 HUD 激活窗口接管                          | 系统模态、仅 ZCode 前台时呈现（经 ObjC shim 调用运行时仍存在的 API，macOS 15 SDK 已移除其声明） |
 | 生命周期 | 随 Codex 退出而退出                                | 常驻运行，并可按需自动拉起                        |
 | 应用图标 | Codex 相关图标                                   | 优先读取 `/Applications/ZCode.app` 的应用图标 |
 
@@ -204,6 +223,10 @@ zquota/
 │   ├── Info.plist
 │   ├── AppIcon.icns
 │   └── zquota-launcher.sh
+├── btt/                        BetterTouchTool 版
+│   ├── render-bars.swift       分段电量条 PNG 渲染器（绘制参数与 APP 版一致）
+│   ├── install.sh              BTT 条目幂等部署脚本
+│   └── icons/                  Z 图标、刷新图标与懒渲染的电量条 PNG
 ├── scripts/
 │   ├── build-app.sh
 │   └── build-dmg.sh

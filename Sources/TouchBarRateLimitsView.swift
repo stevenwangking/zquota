@@ -15,7 +15,6 @@ extension NSButton {
         guard spinning != isSpinActive else {
             return
         }
-        NSLog("[ZQuota] spin \(spinning ? "start" : "stop")")
         isSpinActive = spinning
         if spinning {
             centerLayerAnchor()
@@ -59,11 +58,6 @@ final class TouchBarRateLimitsView: NSView {
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layout() {
-        super.layout()
-        // 无需锚点处理：旋转动画走 frameCenterRotation（NSButton 扩展内实现）
     }
 
     func update(with state: RateLimitDisplayState) {

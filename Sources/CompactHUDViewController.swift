@@ -70,23 +70,30 @@ final class CompactHUDViewController: NSViewController, NSTouchBarDelegate {
         return touchBar
     }
 
-    /// 以系统模态方式常驻呈现额度条（不依赖本应用窗口成为 key window）
+    /// 以系统模态方式呈现额度条（不依赖本应用窗口成为 key window）。
+    /// 呈现时机由 AppDelegate 按前台应用驱动（仅 ZCode 前台时调用），此处不再激活应用：
+    /// 跟随切换反复激活会抢走 ZCode 的输入焦点；TouchBar 按钮事件只要求本 app
+    /// 曾被激活过一次，由 AppDelegate 在启动时保证。
     func presentTouchBarOnSystem() {
-        NSLog("[ZQuota] present enter")
         dismissTouchBarFromSystem()
         let touchBar = makeQuotaTouchBar()
-        systemModalTouchBar = touchBar
         touchBarView.update(with: currentState)
-        // TouchBar 触摸事件只派发给激活的 app：accessory 应用必须显式激活一次，
-        // 否则额度条可见但按钮不响应（原项目同样依赖点击 HUD 激活后才可用）
-        NSApp.activate(ignoringOtherApps: true)
+
+        // present 成功才持有引用；失败时保持 nil，菜单栏/HUD 不受影响
         #if canImport(ZCodeTouchBarShim)
-        let barPointer = Unmanaged.passUnretained(touchBar).toOpaque()
-        ZCTouchBarPresentSystemModal(barPointer, 1)
-        NSLog("[ZQuota] present dispatched")
+        if ZCTouchBarPresentSystemModal(Unmanaged.passUnretained(touchBar).toOpaque(), 1) {
+            systemModalTouchBar = touchBar
+        } else {
+            NSLog("[ZQuota] present skipped: system modal API unavailable at runtime")
+        }
         #else
         NSLog("[ZQuota] present skipped: shim missing")
         #endif
+    }
+
+    /// 系统模态条是否处于呈现状态（供判重，避免已呈现时重复重建引发闪烁）
+    var isTouchBarPresentedOnSystem: Bool {
+        systemModalTouchBar != nil
     }
 
     func dismissTouchBarFromSystem() {
@@ -131,12 +138,10 @@ final class CompactHUDViewController: NSViewController, NSTouchBarDelegate {
     }
 
     @objc private func collapseTouchBarClicked() {
-        NSLog("[ZQuota] touchbar close tapped")
         onCollapseTouchBar()
     }
 
     @objc private func refreshClicked() {
-        NSLog("[ZQuota] touchbar refresh tapped")
         onRefresh()
     }
 

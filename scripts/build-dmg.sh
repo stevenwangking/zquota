@@ -10,7 +10,8 @@ VERSION="${1:-0.1.0}"
 OUT_DIR="${2:-$ROOT_DIR/dist}"
 DMG_NAME="ZQuota-${VERSION}-macOS.dmg"
 
-APP_PATH="$(bash "$ROOT_DIR/scripts/build-app.sh" | tail -n 1)"
+# 版本号随 build-app.sh 写入 app 内 Info.plist，保证 DMG 文件名与应用版本一致
+APP_PATH="$(bash "$ROOT_DIR/scripts/build-app.sh" "$VERSION" | tail -n 1)"
 
 STAGE_PARENT="$(mktemp -d)"
 trap 'rm -rf "$STAGE_PARENT"' EXIT

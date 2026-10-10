@@ -9,14 +9,24 @@
 + (void)dismissSystemModalTouchBar:(NSTouchBar *)touchBar;
 @end
 
-void ZCTouchBarPresentSystemModal(void *touchBar, long long placement) {
+BOOL ZCTouchBarPresentSystemModal(void *touchBar, long long placement) {
+    SEL selector = @selector(presentSystemModalTouchBar:placement:systemTrayItemIdentifier:);
+    if (![(id)[NSTouchBar class] respondsToSelector:selector]) {
+        return NO;
+    }
     NSTouchBar *bar = (__bridge NSTouchBar *)touchBar;
     [NSTouchBar presentSystemModalTouchBar:bar
                                   placement:placement
                     systemTrayItemIdentifier:nil];
+    return YES;
 }
 
-void ZCTouchBarDismissSystemModal(void *touchBar) {
+BOOL ZCTouchBarDismissSystemModal(void *touchBar) {
+    SEL selector = @selector(dismissSystemModalTouchBar:);
+    if (![(id)[NSTouchBar class] respondsToSelector:selector]) {
+        return NO;
+    }
     NSTouchBar *bar = (__bridge NSTouchBar *)touchBar;
     [NSTouchBar dismissSystemModalTouchBar:bar];
+    return YES;
 }

@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
     private var touchBarMenuItem: NSMenuItem?
     private var menuBarIconOnlyMenuItem: NSMenuItem?
     private var lastState = RateLimitDisplayState.initial
+    private var workspaceObserver: Any?
     private var colorMenuItems: [HUDAppearance.ColorChoice: NSMenuItem] = [:]
     private var backgroundOpacityMenuItems: [Double: NSMenuItem] = [:]
     private var contentOpacityMenuItems: [Double: NSMenuItem] = [:]
@@ -60,13 +61,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         ZCodeAutoLauncher.clearManualQuitLock()
 
         store.start()
+        observeFrontmostApplication()
 
-        if touchBarDisplayEnabled {
-            hudController.presentTouchBarOnSystem()
-        }
+        // TouchBar 触摸事件只派发给激活过的 app：启动时激活一次即可。
+        // 之后跟随前台自动呈现时不可再激活，否则会抢走 ZCode 的输入焦点
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        if let workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(workspaceObserver)
+        }
         store.stop()
     }
 
@@ -90,9 +95,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         updateMenuState()
     }
 
+    /// ZCode 桌面端安装路径与 bundle id（图标、前台判定共用）
+    private static let zcodeAppPath = "/Applications/ZCode.app"
+    private static let zcodeBundleID = Bundle(url: URL(fileURLWithPath: zcodeAppPath))?.bundleIdentifier
+
     /// 菜单栏用 ZCode 应用图标（与 Touch Bar 视图同源），缩放到菜单栏标准尺寸
     private static func menuBarIcon() -> NSImage {
-        let zcodeAppPath = "/Applications/ZCode.app"
         let image: NSImage
         if FileManager.default.fileExists(atPath: zcodeAppPath) {
             image = NSWorkspace.shared.icon(forFile: zcodeAppPath)
@@ -119,7 +127,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
         hudVisibilityMenuItem = visibilityItem
 
         let touchBarItem = NSMenuItem(
-            title: "显示在 Touch Bar",
+            title: "在 ZCode 前台时显示",
             action: #selector(toggleTouchBarDisplay(_:)),
             keyEquivalent: ""
         )
@@ -337,12 +345,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate, RateLimitStoreDelegate
 
     private func setTouchBarDisplay(_ enabled: Bool) {
         touchBarDisplayEnabled = enabled
-        if enabled {
-            hudController.presentTouchBarOnSystem()
+        if enabled, let app = NSWorkspace.shared.frontmostApplication {
+            syncTouchBarPresence(with: app)
         } else {
             hudController.dismissTouchBarFromSystem()
         }
         updateMenuState()
+    }
+
+    // MARK: - TouchBar 跟随前台应用
+
+    /// 系统 TouchBar 只有一块：额度条以系统模态方式呈现时会遮挡其他应用的
+    /// TouchBar 内容（微信、Trae 等）。因此仅当 ZCode 桌面端处于前台时呈现，
+    /// 切到其他应用自动让位，回到 ZCode 自动恢复。
+    private func observeFrontmostApplication() {
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let self,
+                  let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
+                return
+            }
+            self.syncTouchBarPresence(with: app)
+        }
+
+        // 启动时按当前前台应用决定初始呈现状态
+        if let app = NSWorkspace.shared.frontmostApplication {
+            syncTouchBarPresence(with: app)
+        }
+    }
+
+    private func syncTouchBarPresence(with app: NSRunningApplication) {
+        // 自身激活（启动时的 activate、点击 HUD 等）不代表离开 ZCode 使用场景
+        guard app.processIdentifier != ProcessInfo.processInfo.processIdentifier else {
+            return
+        }
+
+        if touchBarDisplayEnabled, Self.isZCodeApp(app) {
+            if !hudController.isTouchBarPresentedOnSystem {
+                hudController.presentTouchBarOnSystem()
+            }
+        } else {
+            hudController.dismissTouchBarFromSystem()
+        }
+    }
+
+    /// ZCode 桌面端判定：优先按安装路径，其次按从 /Applications/ZCode.app 读取的 bundle id
+    private static func isZCodeApp(_ app: NSRunningApplication) -> Bool {
+        if app.bundleURL?.path == zcodeAppPath {
+            return true
+        }
+        guard let zcodeBundleID,
+              let bundleID = app.bundleIdentifier else {
+            return false
+        }
+        return bundleID == zcodeBundleID
     }
 
     private func showHUDWindow() {

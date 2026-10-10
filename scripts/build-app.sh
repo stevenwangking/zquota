@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 可选参数：应用版本号，写入 app bundle 的 CFBundleShortVersionString（在签名前完成）
+VERSION="${1:-}"
+
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_DIR="$ROOT_DIR/build/ZQuota.app"
 MACOS_DIR="$APP_DIR/Contents/MacOS"
@@ -23,6 +26,9 @@ rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
 cp "$EXECUTABLE_PATH" "$MACOS_DIR/ZQuota"
 cp "Resources/Info.plist" "$APP_DIR/Contents/Info.plist"
+if [[ -n "$VERSION" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP_DIR/Contents/Info.plist"
+fi
 cp "Resources/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
 cp "Resources/zquota-launcher.sh" "$RESOURCES_DIR/zquota-launcher.sh"
 chmod +x "$RESOURCES_DIR/zquota-launcher.sh"
