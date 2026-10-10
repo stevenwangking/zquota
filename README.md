@@ -231,6 +231,7 @@ zquota/
 │   ├── build-app.sh
 │   └── build-dmg.sh
 ├── LICENSE
+├── CHANGELOG.md                 更新日志
 └── README.md
 ```
 
