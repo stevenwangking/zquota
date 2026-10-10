@@ -170,8 +170,8 @@ ZQuota 直接读取 ZCode 的本地登录凭据，并调用额度接口获取使
 针对已通过 [BetterTouchTool](https://www.folivora.ai) 自定义 Touch Bar 的场景，仓库提供等价的 BTT 部署方案（要求系统设置「触控栏显示」为 App 控制模式）：
 
 * **视觉规格与 APP 版一致**：分段电量条由 `btt/render-bars.swift` 按APP 版 `SegmentedBatteryBar` 的绘制参数（10 段、段距、圆角、三档配色）渲染为 @2x PNG；文本双行布局、倒计时文案与 `TouchBarRateLimitsView` 对齐。
-* **数据链路复用**：`~/.local/bin/zquota-btt`（Node）复用凭据解密与额度接口调用，带 25 秒 JSON 缓存；电量条 PNG 按剩余比例组合懒渲染并落盘复用。
-* **部署**：`btt/install.sh` 通过 BTT 的 AppleScript 接口幂等创建三个条目——ZCode 图标、主 widget（30 秒自刷新）、刷新按钮；点击 widget 或刷新按钮即时重拉数据上屏。
+* **数据链路复用**：`btt/zquota-btt.mjs`（Node）复用凭据解密与额度接口调用，带 25 秒 JSON 缓存；电量条 PNG 按剩余比例组合懒渲染并落盘复用。脚本随仓库分发，部署时由 `install.sh` 安装到 `~/.local/bin/zquota-btt`。
+* **部署**：`btt/install.sh` 先安装上述脚本，再通过 BTT 的 AppleScript 接口幂等创建三个条目——ZCode 图标、主 widget（30 秒自刷新）、刷新按钮；点击 widget 或刷新按钮即时重拉数据上屏。
 * 与 APP 版可共存，各自独立刷新互不干扰；卸载时在 BTT 中删除 `ZQuota` / `ZQuotaIcon` / `ZQuotaRefresh` 三个条目即可。
 
 ```bash
@@ -230,6 +230,7 @@ zquota/
 │   ├── AppIcon.icns
 │   └── zquota-launcher.sh
 ├── btt/                        BetterTouchTool 版
+│   ├── zquota-btt.mjs          数据渲染器（安装到 ~/.local/bin/zquota-btt 供 widget 调用）
 │   ├── render-bars.swift       分段电量条 PNG 渲染器（绘制参数与 APP 版一致）
 │   ├── install.sh              BTT 条目幂等部署脚本
 │   └── icons/                  Z 图标、刷新图标与懒渲染的电量条 PNG

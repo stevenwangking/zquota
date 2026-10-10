@@ -1,11 +1,16 @@
 #!/bin/bash
-# ZQuota BTT 版部署：清理同名旧条目 → 创建 Z图标 / 主widget / 刷新按钮 → 取回 widget uuid 落盘
-# 幂等，可重复执行。依赖：~/.local/bin/zquota-btt、icons/{zcode,refresh}.png
+# ZQuota BTT 版部署：安装数据渲染器 → 清理同名旧条目 → 创建 Z图标 / 主widget / 刷新按钮 → 取回 widget uuid 落盘
+# 幂等，可重复执行。zquota-btt.mjs 以仓库为唯一源安装到 ~/.local/bin/zquota-btt；依赖：icons/{zcode,refresh}.png
 # 条目必须带 BTTBelongsToApp:'Global' 才会落全局分组并在触控栏显示（缺了只在特定 app 域可见）
 set -euo pipefail
 
 export ZQUOTA_HOME="$(echo ~)"
 export ZQUOTA_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# 0. 安装数据渲染器（覆盖旧副本，BTT 条目内调用路径固定为 ~/.local/bin/zquota-btt）
+mkdir -p "$ZQUOTA_HOME/.local/bin"
+install -m 755 "$ZQUOTA_DIR/zquota-btt.mjs" "$ZQUOTA_HOME/.local/bin/zquota-btt"
+echo "已安装: $ZQUOTA_HOME/.local/bin/zquota-btt"
 
 OUT="$(osascript -l JavaScript << 'JXA_EOF'
 ObjC.import('Foundation');
